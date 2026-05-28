@@ -43,6 +43,20 @@ spec:
                 checkout scm
             }
         }
+        stage('Debug') {
+            steps {
+                container('python') {
+                    sh '''
+                        echo "=== PWD ==="
+                        pwd
+                        echo "=== Contenu ==="
+                        ls -la
+                        echo "=== Cherche test.py ==="
+                        find / -name "test.py" 2>/dev/null || echo "non trouve"
+                    '''
+                }
+            }
+        }
         stage('Test') {
             steps {
                 container('python') {
