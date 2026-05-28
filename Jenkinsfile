@@ -18,10 +18,12 @@ spec:
     - mountPath: /var/run/docker.sock
       name: docker-sock
   - name: kubectl
-    image: lachlanevenson/k8s-kubectl:v1.17.2
+    image: bitnami/kubectl:latest
     command:
     - cat
     tty: true
+    securityContext:
+      runAsUser: 0
   volumes:
   - name: docker-sock
     hostPath:
@@ -29,7 +31,9 @@ spec:
 '''
         }
     }
-
+    triggers {
+        pollSCM('* * * * *')
+    }
     stages {
         stage('Test') {
             steps {
@@ -42,7 +46,6 @@ spec:
                 }
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 container('docker') {
@@ -54,7 +57,6 @@ spec:
                 }
             }
         }
-
         stage('Deploy to Kubernetes') {
             steps {
                 container('kubectl') {
@@ -67,7 +69,6 @@ spec:
             }
         }
     }
-
     post {
         success {
             echo 'Pipeline réussi !'
