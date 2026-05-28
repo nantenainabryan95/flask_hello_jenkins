@@ -31,11 +31,11 @@ spec:
 '''
         }
     }
-    
+
     triggers {
         pollSCM('* * * * *')
     }
-    
+
     stages {
         stage('Debug - List files') {
             steps {
@@ -51,7 +51,7 @@ spec:
                 }
             }
         }
-        
+
         stage('Test Python') {
             steps {
                 container('python') {
@@ -68,7 +68,13 @@ spec:
             steps {
                 container('docker') {
                     sh '''
+                        echo "=== Verifying Docker socket ==="
+                        ls -la /var/run/docker.sock
+                        echo "=== Docker version ==="
+                        docker version
+                        echo "=== Building image ==="
                         docker build -t localhost:4000/pythontest:latest .
+                        echo "=== Pushing image ==="
                         docker push localhost:4000/pythontest:latest
                     '''
                 }
@@ -79,15 +85,17 @@ spec:
             steps {
                 container('kubectl') {
                     sh '''
+                        echo "=== Applying manifests ==="
                         kubectl apply -f ./kubernetes/deployment.yaml
                         kubectl apply -f ./kubernetes/service.yaml
-                        kubectl rollout status deployment/pythontest
+                        echo "=== Waiting for rollout ==="
+                        kubectl rollout status deployment/pythontest --timeout=60s
                     '''
                 }
             }
         }
     }
-    
+
     post {
         success {
             echo 'Pipeline réussi !'
