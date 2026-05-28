@@ -10,12 +10,14 @@ spec:
   - name: python
     image: python:3.9
     imagePullPolicy: IfNotPresent
-    command: ["cat"]
+    command:
+    - cat
     tty: true
   - name: docker
     image: docker:24.0.9
     imagePullPolicy: IfNotPresent
-    command: ["cat"]
+    command:
+    - cat
     tty: true
     env:
     - name: DOCKER_HOST
@@ -23,7 +25,8 @@ spec:
   - name: kubectl
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
-    command: ["cat"]
+    command:
+    - cat
     tty: true
 '''
         }
@@ -39,9 +42,9 @@ spec:
             steps {
                 container('python') {
                     sh '''
-                        echo "=== Répertoire courant ==="
+                        echo "=== Repertoire courant ==="
                         pwd
-                        echo "=== Fichiers présents ==="
+                        echo "=== Fichiers presents ==="
                         ls -la
                     '''
                 }
@@ -64,7 +67,7 @@ spec:
             steps {
                 container('docker') {
                     sh '''
-                        echo "=== Vérification connexion Docker ==="
+                        echo "=== Verification connexion Docker ==="
                         docker version
 
                         echo "=== Build image ==="
@@ -97,10 +100,10 @@ spec:
 
     post {
         success {
-            echo 'Pipeline réussi !'
+            echo 'Pipeline reussi !'
         }
         failure {
-            echo 'Pipeline échoué !'
+            echo 'Pipeline echoue !'
         }
     }
 }
