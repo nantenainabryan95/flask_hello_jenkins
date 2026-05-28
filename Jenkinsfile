@@ -8,10 +8,12 @@ spec:
   containers:
   - name: python
     image: python:3.9
+    imagePullPolicy: IfNotPresent
     command: ["cat"]
     tty: true
   - name: docker
     image: docker:24.0.9
+    imagePullPolicy: IfNotPresent
     command: ["cat"]
     tty: true
     volumeMounts:
@@ -19,6 +21,7 @@ spec:
       name: docker-sock
   - name: kubectl
     image: bitnami/kubectl:latest
+    imagePullPolicy: IfNotPresent
     command:
     - cat
     tty: true
@@ -35,6 +38,11 @@ spec:
         pollSCM('* * * * *')
     }
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
         stage('Test') {
             steps {
                 container('python') {
