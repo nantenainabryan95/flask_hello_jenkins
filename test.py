@@ -9,19 +9,18 @@ class TestHello(unittest.TestCase):
 
     def test_hello(self):
         rv = self.app.get('/')
-        self.assertEqual(rv.status, '200 OK')
+        self.assertEqual(rv.status_code, 200)
         self.assertEqual(rv.data, b'Hello World!\n')
 
     def test_hello_hello(self):
         rv = self.app.get('/hello/')
-        self.assertEqual(rv.status, '200 OK')
+        self.assertEqual(rv.status_code, 200)
         self.assertEqual(rv.data, b'Hello World!\n')
 
     def test_hello_name(self):
-        name = 'Simon'
-        rv = self.app.get(f'/hello/{name}')
-        self.assertEqual(rv.status, '200 OK')
-        self.assertEqual(rv.data, b'Hello Simon!\n')  # Plus simple et fiable
+        rv = self.app.get('/hello/Simon')
+        self.assertEqual(rv.status_code, 200)
+        self.assertEqual(rv.data, b'Hello Simon!\n')
 
 if __name__ == '__main__':
     unittest.main()
