@@ -22,11 +22,8 @@ spec:
   - name: kubectl
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
-    command:
-    - cat
+    command: ["cat"]
     tty: true
-    securityContext:
-      runAsUser: 0
   volumes:
   - name: docker-sock
     hostPath:
@@ -34,51 +31,50 @@ spec:
 '''
         }
     }
+    
     triggers {
         pollSCM('* * * * *')
     }
+    
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-        stage('Debug') {
+        stage('Debug - List files') {
             steps {
                 container('python') {
                     sh '''
-                        echo "=== PWD ==="
+                        echo "=== Current directory ==="
                         pwd
-                        echo "=== Contenu ==="
+                        echo "=== Files in workspace ==="
                         ls -la
-                        echo "=== Cherche test.py ==="
-                        find / -name "test.py" 2>/dev/null || echo "non trouve"
+                        echo "=== Check test.py exists ==="
+                        test -f test.py && echo "test.py found!" || echo "test.py NOT found!"
                     '''
                 }
             }
         }
-        stage('Test') {
+        
+        stage('Test Python') {
             steps {
                 container('python') {
                     sh '''
                         pip install --upgrade pip
                         pip install -r requirements.txt
-                        python test.py
+                        python test.py -v
                     '''
                 }
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 container('docker') {
                     sh '''
-                        docker build -t pythontest:latest .
-                        docker tag pythontest:latest localhost:4000/pythontest:latest
+                        docker build -t localhost:4000/pythontest:latest .
                         docker push localhost:4000/pythontest:latest
                     '''
                 }
             }
         }
+
         stage('Deploy to Kubernetes') {
             steps {
                 container('kubectl') {
@@ -91,6 +87,7 @@ spec:
             }
         }
     }
+    
     post {
         success {
             echo 'Pipeline réussi !'
