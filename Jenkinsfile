@@ -1,41 +1,79 @@
 pipeline {
-    agent any
-
-    triggers {
-        pollSCM('* * * * *')
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: python
+    image: python:3.9
+    command: ["cat"]
+    tty: true
+  - name: docker
+    image: docker:24.0.9
+    command: ["cat"]
+    tty: true
+    volumeMounts:
+    - mountPath: /var/run/docker.sock
+      name: docker-sock
+  - name: kubectl
+    image: lachlanevenson/k8s-kubectl:v1.17.2
+    command:
+    - cat
+    tty: true
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+'''
+        }
     }
 
     stages {
         stage('Test') {
             steps {
-                echo 'Test stage'
-                sh "pip3 install -r requirements.txt || true"
-                sh "python3 test.py || true"
+                container('python') {
+                    sh '''
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        python test.py
+                    '''
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image'
-                sh "docker build -t pythontest:latest . || true"
+                container('docker') {
+                    sh '''
+                        docker build -t pythontest:latest .
+                        docker tag pythontest:latest localhost:4000/pythontest:latest
+                        docker push localhost:4000/pythontest:latest
+                    '''
+                }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                echo 'Deploying to Kubernetes'
-                sh "kubectl apply -f ./kubernetes/deployment.yaml"
-                sh "kubectl apply -f ./kubernetes/service.yaml"
+                container('kubectl') {
+                    sh '''
+                        kubectl apply -f ./kubernetes/deployment.yaml
+                        kubectl apply -f ./kubernetes/service.yaml
+                        kubectl rollout status deployment/pythontest
+                    '''
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline reussi !'
+            echo 'Pipeline réussi !'
         }
         failure {
-            echo 'Pipeline echoue !'
+            echo 'Pipeline échoué !'
         }
     }
 }
