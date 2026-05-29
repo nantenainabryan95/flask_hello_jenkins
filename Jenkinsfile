@@ -12,15 +12,15 @@ spec:
     command: ['/bin/cat']
     tty: true
   - name: docker
-    image: docker:24.0.9
+    image: docker:24.0.9-dind
     imagePullPolicy: IfNotPresent
     command: ['/bin/cat']
     tty: true
     securityContext:
       privileged: true
-    volumeMounts:
-    - mountPath: /var/run/docker.sock
-      name: docker-sock
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
   - name: kubectl
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
@@ -28,10 +28,6 @@ spec:
     tty: true
     securityContext:
       runAsUser: 0
-  volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
 """
         }
     }
@@ -59,6 +55,7 @@ spec:
             steps {
                 container('docker') {
                     sh '''
+                        until docker info; do sleep 2; done
                         docker build -t pythontest:latest .
                         docker tag pythontest:latest localhost:4000/pythontest:latest
                         docker push localhost:4000/pythontest:latest
