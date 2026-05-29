@@ -12,13 +12,14 @@ spec:
     command: ["cat"]
     tty: true
   - name: docker
-    image: docker:24.0.9
-    imagePullPolicy: IfNotPresent
-    command: ["cat"]
+    image: docker:24.0.9-dind
+    command: ["dockerd", "-H", "tcp://127.0.0.1:2375", "--tls=false"]
     tty: true
-    volumeMounts:
-    - mountPath: /var/run/docker.sock
-      name: docker-sock
+    securityContext:
+      privileged: true
+    env:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2375
   - name: kubectl
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
@@ -63,18 +64,21 @@ spec:
         }
 
         stage('Build Docker Image') {
-    steps {
-        container('docker') {
-            sh '''
-                echo "Waiting for Docker daemon..."
-                until docker info; do sleep 2; done
-                echo "Docker is ready!"
-                docker build -t localhost:5001/pythontest:latest .
-                docker push localhost:5001/pythontest:latest
-            '''
+            steps {
+                container('docker') {
+                    sh '''
+                        echo "Waiting for Docker daemon..."
+                        until docker info > /dev/null 2>&1; do
+                            echo "Waiting for Docker daemon to start..."
+                            sleep 2
+                        done
+                        echo "Docker is ready!"
+                        docker build -t localhost:5001/pythontest:latest .
+                        docker push localhost:5001/pythontest:latest
+                    '''
+                }
+            }
         }
-    }
-}
 
         stage('Deploy to Kubernetes') {
             steps {
