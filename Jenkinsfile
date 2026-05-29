@@ -13,7 +13,7 @@ spec:
     tty: true
   - name: docker
     image: docker:24.0.9-dind
-    command: ["dockerd", "-H", "tcp://127.0.0.1:2375", "--tls=false"]
+    command: ["dockerd", "-H", "tcp://127.0.0.1:2375", "--tls=false", "--insecure-registry=host.docker.internal:5001"]
     tty: true
     securityContext:
       privileged: true
@@ -25,7 +25,6 @@ spec:
     imagePullPolicy: IfNotPresent
     command: ["cat"]
     tty: true
-  # Plus besoin du volume docker-sock avec DinD !
 '''
         }
     }
@@ -61,21 +60,17 @@ spec:
         }
 
         stage('Build Docker Image') {
-    steps {
-        container('docker') {
-            sh '''
-                echo "Waiting for Docker daemon..."
-                until docker info > /dev/null 2>&1; do
-                    echo "Waiting for Docker daemon to start..."
-                    sleep 2
-                done
-                echo "Docker is ready!"
-                docker build -t host.docker.internal:5001/pythontest:latest .
-                docker push host.docker.internal:5001/pythontest:latest
-            '''
+            steps {
+                container('docker') {
+                    sh '''
+                        echo "Waiting for Docker daemon..."
+                        sleep 10
+                        docker build -t host.docker.internal:5001/pythontest:latest .
+                        docker push host.docker.internal:5001/pythontest:latest
+                    '''
+                }
+            }
         }
-    }
-}
 
         stage('Deploy to Kubernetes') {
             steps {
