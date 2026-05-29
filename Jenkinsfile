@@ -1,7 +1,7 @@
 pipeline {
     agent {
         kubernetes {
-            yaml '''
+            yaml """
 apiVersion: v1
 kind: Pod
 spec:
@@ -9,14 +9,12 @@ spec:
   - name: python
     image: python:3.9
     imagePullPolicy: IfNotPresent
-    command:
-    - /bin/cat
+    command: ['/bin/cat']
     tty: true
   - name: docker
     image: docker:24.0.9
     imagePullPolicy: IfNotPresent
-    command:
-    - /bin/cat
+    command: ['/bin/cat']
     tty: true
     volumeMounts:
     - mountPath: /var/run/docker.sock
@@ -24,8 +22,7 @@ spec:
   - name: kubectl
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
-    command:
-    - /bin/cat
+    command: ['/bin/cat']
     tty: true
     securityContext:
       runAsUser: 0
@@ -33,7 +30,7 @@ spec:
   - name: docker-sock
     hostPath:
       path: /var/run/docker.sock
-'''
+"""
         }
     }
     triggers {
