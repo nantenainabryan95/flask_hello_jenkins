@@ -23,7 +23,8 @@ spec:
   - name: kubectl
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
-    command: ["cat"]
+    command: ["/bin/sh", "-c"]
+    args: ["tail -f /dev/null"]
     tty: true
 '''
         }
