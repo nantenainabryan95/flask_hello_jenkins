@@ -16,6 +16,8 @@ spec:
     imagePullPolicy: IfNotPresent
     command: ['/bin/cat']
     tty: true
+    securityContext:
+      privileged: true
     volumeMounts:
     - mountPath: /var/run/docker.sock
       name: docker-sock
@@ -40,18 +42,6 @@ spec:
         stage('Checkout') {
             steps {
                 checkout scm
-            }
-        }
-        stage('Debug') {
-            steps {
-                container('python') {
-                    sh '''
-                        echo "=== PWD ==="
-                        pwd
-                        echo "=== Contenu ==="
-                        ls -la
-                    '''
-                }
             }
         }
         stage('Test') {
