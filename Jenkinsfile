@@ -1,7 +1,9 @@
+cd ~/tp_jenkins/flask_app
+cat > Jenkinsfile << 'EOF'
 pipeline {
     agent {
         kubernetes {
-            yaml """
+            yaml '''
 apiVersion: v1
 kind: Pod
 spec:
@@ -9,78 +11,93 @@ spec:
   - name: python
     image: python:3.9
     imagePullPolicy: IfNotPresent
-    command: ['/bin/cat']
+    command:
+    - cat
     tty: true
   - name: docker
-    image: docker:24.0.9-dind
+    image: docker:24.0.9
     imagePullPolicy: IfNotPresent
-    command: ['/bin/cat']
+    command:
+    - cat
     tty: true
-    securityContext:
-      privileged: true
     env:
-    - name: DOCKER_TLS_CERTDIR
-      value: ""
+    - name: DOCKER_HOST
+      value: tcp://host.docker.internal:2375
   - name: kubectl
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
-    command: ['/bin/cat']
+    command:
+    - cat
     tty: true
-    securityContext:
-      runAsUser: 0
-"""
+'''
         }
     }
+
     triggers {
         pollSCM('* * * * *')
     }
+
     stages {
-        stage('Checkout') {
+
+        stage('1 - Debug workspace') {
             steps {
-                checkout scm
+                container('python') {
+                    sh '''
+                        echo "=== Repertoire courant ==="
+                        pwd
+                        ls -la
+                    '''
+                }
             }
         }
-        stage('Test') {
+
+        stage('2 - Test Python') {
             steps {
                 container('python') {
                     sh '''
                         pip install --upgrade pip
                         pip install -r requirements.txt
-                        python test.py
+                        python test.py -v
                     '''
                 }
             }
         }
-        stage('Build Docker Image') {
+
+        stage('3 - Build et Push image Docker') {
             steps {
                 container('docker') {
                     sh '''
-                        until docker info; do sleep 2; done
-                        docker build -t pythontest:latest .
-                        docker tag pythontest:latest localhost:4000/pythontest:latest
-                        docker push localhost:4000/pythontest:latest
+                        echo "=== Test connexion Docker ==="
+                        docker version
+                        echo "=== Build image ==="
+                        docker build -t host.docker.internal:4000/pythontest:latest .
+                        echo "=== Push image ==="
+                        docker push host.docker.internal:4000/pythontest:latest
                     '''
                 }
             }
         }
-        stage('Deploy to Kubernetes') {
+
+        stage('4 - Deploy sur Kubernetes') {
             steps {
                 container('kubectl') {
                     sh '''
                         kubectl apply -f ./kubernetes/deployment.yaml
                         kubectl apply -f ./kubernetes/service.yaml
-                        kubectl rollout status deployment/pythontest
+                        kubectl rollout status deployment/pythontest --timeout=90s
                     '''
                 }
             }
         }
     }
+
     post {
         success {
-            echo 'Pipeline réussi !'
+            echo 'Pipeline reussi !'
         }
         failure {
-            echo 'Pipeline échoué !'
+            echo 'Pipeline echoue !'
         }
     }
 }
+EOF
