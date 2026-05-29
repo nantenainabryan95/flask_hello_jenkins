@@ -63,18 +63,18 @@ spec:
         }
 
         stage('Build Docker Image') {
-            steps {
-                container('docker') {
-                    sh '''
-                        echo "Waiting for Docker daemon..."
-                        until docker info; do sleep 2; done
-                        echo "Docker is ready!"
-                        docker build -t localhost:4000/pythontest:latest .
-                        docker push localhost:4000/pythontest:latest
-                    '''
-                }
-            }
+    steps {
+        container('docker') {
+            sh '''
+                echo "Waiting for Docker daemon..."
+                until docker info; do sleep 2; done
+                echo "Docker is ready!"
+                docker build -t localhost:5001/pythontest:latest .
+                docker push localhost:5001/pythontest:latest
+            '''
         }
+    }
+}
 
         stage('Deploy to Kubernetes') {
             steps {
