@@ -61,21 +61,21 @@ spec:
         }
 
         stage('Build Docker Image') {
-            steps {
-                container('docker') {
-                    sh '''
-                        echo "Waiting for Docker daemon..."
-                        until docker info > /dev/null 2>&1; do
-                            echo "Waiting for Docker daemon to start..."
-                            sleep 2
-                        done
-                        echo "Docker is ready!"
-                        docker build -t localhost:5001/pythontest:latest .
-                        docker push localhost:5001/pythontest:latest
-                    '''
-                }
-            }
+    steps {
+        container('docker') {
+            sh '''
+                echo "Waiting for Docker daemon..."
+                until docker info > /dev/null 2>&1; do
+                    echo "Waiting for Docker daemon to start..."
+                    sleep 2
+                done
+                echo "Docker is ready!"
+                docker build -t host.docker.internal:5001/pythontest:latest .
+                docker push host.docker.internal:5001/pythontest:latest
+            '''
         }
+    }
+}
 
         stage('Deploy to Kubernetes') {
             steps {
