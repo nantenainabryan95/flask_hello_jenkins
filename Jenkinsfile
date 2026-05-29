@@ -25,10 +25,7 @@ spec:
     imagePullPolicy: IfNotPresent
     command: ["cat"]
     tty: true
-  volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
+  # Plus besoin du volume docker-sock avec DinD !
 '''
         }
     }
