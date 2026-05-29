@@ -10,13 +10,13 @@ spec:
     image: python:3.9
     imagePullPolicy: IfNotPresent
     command:
-    - cat
+    - /bin/cat
     tty: true
   - name: docker
     image: docker:24.0.9
     imagePullPolicy: IfNotPresent
     command:
-    - cat
+    - /bin/cat
     tty: true
     volumeMounts:
     - mountPath: /var/run/docker.sock
@@ -25,7 +25,7 @@ spec:
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
     command:
-    - cat
+    - /bin/cat
     tty: true
     securityContext:
       runAsUser: 0
