@@ -1,79 +1,102 @@
-```groovy
 pipeline {
     agent {
         kubernetes {
-            label 'jenkins-agent-my-app'
-
-            yaml """
+            yaml '''
 apiVersion: v1
 kind: Pod
-metadata:
-  labels:
-    component: ci
-
 spec:
   containers:
-    - name: python
-      image: python:3.7
-      command:
-        - cat
-      tty: true
-
-    - name: docker
-      image: docker
-      command:
-        - cat
-      tty: true
-      volumeMounts:
-        - mountPath: /var/run/docker.sock
-          name: docker-sock
-
-    - name: kubectl
-      image: lachlanevenson/k8s-kubectl:v1.17.2
-      command:
-        - cat
-      tty: true
-
+  - name: python
+    image: python:3.9
+    imagePullPolicy: IfNotPresent
+    command:
+    - cat
+    tty: true
+  - name: docker
+    image: docker:24.0.9
+    imagePullPolicy: IfNotPresent
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - mountPath: /var/run/docker.sock
+      name: docker-sock
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    imagePullPolicy: IfNotPresent
+    command:
+    - cat
+    tty: true
+    securityContext:
+      runAsUser: 0
   volumes:
-    - name: docker-sock
-      hostPath:
-        path: /var/run/docker.sock
-"""
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+'''
         }
     }
-
     triggers {
         pollSCM('* * * * *')
     }
-
     stages {
-
-        stage('Test python') {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Debug') {
             steps {
                 container('python') {
-                    sh 'pip install -r requirements.txt'
-                    sh 'python test.py'
+                    sh '''
+                        echo "=== PWD ==="
+                        pwd
+                        echo "=== Contenu ==="
+                        ls -la
+                    '''
                 }
             }
         }
-
-        stage('Build image') {
+        stage('Test') {
+            steps {
+                container('python') {
+                    sh '''
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        python test.py
+                    '''
+                }
+            }
+        }
+        stage('Build Docker Image') {
             steps {
                 container('docker') {
-                    sh 'docker build -t localhost:4000/pythontest:latest .'
-                    sh 'docker push localhost:4000/pythontest:latest'
+                    sh '''
+                        docker build -t pythontest:latest .
+                        docker tag pythontest:latest localhost:4000/pythontest:latest
+                        docker push localhost:4000/pythontest:latest
+                    '''
                 }
             }
         }
-
-        stage('Deploy') {
+        stage('Deploy to Kubernetes') {
             steps {
                 container('kubectl') {
-                    sh 'kubectl apply -f kubernetes/deployment.yaml'
-                    sh 'kubectl apply -f kubernetes/service.yaml'
+                    sh '''
+                        kubectl apply -f ./kubernetes/deployment.yaml
+                        kubectl apply -f ./kubernetes/service.yaml
+                        kubectl rollout status deployment/pythontest
+                    '''
                 }
             }
         }
     }
+    post {
+        success {
+            echo 'Pipeline réussi !'
+        }
+        failure {
+            echo 'Pipeline échoué !'
+        }
+    }
 }
-```
