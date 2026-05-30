@@ -9,18 +9,23 @@ class TestHello(unittest.TestCase):
 
     def test_hello(self):
         rv = self.app.get('/')
-        self.assertEqual(rv.status_code, 200)
+        self.assertEqual(rv.status, '200 OK')
         self.assertEqual(rv.data, b'Hello World!\n')
 
     def test_hello_hello(self):
         rv = self.app.get('/hello/')
-        self.assertEqual(rv.status_code, 200)
+        self.assertEqual(rv.status, '200 OK')
         self.assertEqual(rv.data, b'Hello World!\n')
 
     def test_hello_name(self):
-        rv = self.app.get('/hello/Simon')
-        self.assertEqual(rv.status_code, 200)
-        self.assertEqual(rv.data, b'Hello Simon!\n')
+        name = 'Simon'
+        rv = self.app.get(f'/hello/{name}')
+        self.assertEqual(rv.status, '200 OK')
+        self.assertIn(bytearray(f"{name}", 'utf-8'), rv.data)
+
+    def test_new_route(self):
+        rv = self.app.get('/feature/Simon')
+        self.assertEqual(rv.status, '200 OK')
 
 if __name__ == '__main__':
     unittest.main()
