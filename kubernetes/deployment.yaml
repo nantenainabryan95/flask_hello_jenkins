@@ -18,8 +18,8 @@ spec:
     spec:
       containers:
       - name: pythontest
-        image: host.docker.internal:5001/pythontest:latest
-        imagePullPolicy: Always
+        image: pythontest:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
           name: microport

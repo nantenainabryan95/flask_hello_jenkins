@@ -1,7 +1,7 @@
 pipeline {
     agent {
         kubernetes {
-            yaml '''
+            yaml """
 apiVersion: v1
 kind: Pod
 spec:
@@ -9,7 +9,7 @@ spec:
   - name: python
     image: python:3.9
     imagePullPolicy: IfNotPresent
-    command: ["cat"]
+    command: ['/bin/cat']
     tty: true
   - name: docker
     image: docker:24.0.9-dind
@@ -23,31 +23,24 @@ spec:
   - name: kubectl
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
-    command: ["/bin/sh"]
-    args: ["-c", "while true; do sleep 30; done;"]
+    command:
+    - sleep
+    - "999999"
     tty: true
-'''
+    securityContext:
+      runAsUser: 0
+"""
         }
     }
-    
     triggers {
         pollSCM('* * * * *')
     }
-    
     stages {
-        stage('Debug - List files') {
+        stage('Checkout') {
             steps {
-                container('python') {
-                    sh '''
-                        echo "=== Current directory ==="
-                        pwd
-                        echo "=== Files in workspace ==="
-                        ls -la
-                    '''
-                }
+                checkout scm
             }
         }
-        
         stage('Test Python') {
             steps {
                 container('python') {
@@ -59,7 +52,6 @@ spec:
                 }
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 container('docker') {
@@ -72,12 +64,10 @@ spec:
                 }
             }
         }
-
         stage('Deploy to Kubernetes') {
             steps {
                 container('kubectl') {
                     sh '''
-                        echo "Deploying to Kubernetes..."
                         kubectl apply -f ./kubernetes/deployment.yaml
                         kubectl apply -f ./kubernetes/service.yaml
                         kubectl rollout status deployment/pythontest
@@ -86,7 +76,6 @@ spec:
             }
         }
     }
-    
     post {
         success {
             echo 'Pipeline réussi !'
