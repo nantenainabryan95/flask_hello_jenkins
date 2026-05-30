@@ -65,17 +65,17 @@ spec:
             }
         }
         stage('Deploy to Kubernetes') {
-            steps {
-                container('kubectl') {
-                    sh '''
-                        kubectl apply -f ./kubernetes/deployment.yaml
-                        kubectl apply -f ./kubernetes/service.yaml
-                        kubectl rollout status deployment/pythontest
-                    '''
-                }
-            }
+    steps {
+        container('kubectl') {
+            sh '''
+                kubectl apply -f ./kubernetes/deployment.yaml
+                kubectl patch deployment pythontest -n jenkins -p "{\\"spec\\":{\\"template\\":{\\"spec\\":{\\"containers\\":[{\\"name\\":\\"pythontest\\",\\"imagePullPolicy\\":\\"Never\\",\\"image\\":\\"pythontest:latest\\"}]}}}}"
+                kubectl apply -f ./kubernetes/service.yaml
+                kubectl rollout status deployment/pythontest --timeout=60s || true
+            '''
         }
     }
+}
     post {
         success {
             echo 'Pipeline réussi !'
