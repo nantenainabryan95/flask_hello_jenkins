@@ -69,6 +69,7 @@ spec:
                 container('kubectl') {
                     sh '''
                         kubectl delete deployment pythontest -n jenkins --ignore-not-found=true
+                        kubectl delete pod pythontest -n jenkins --ignore-not-found=true
                         kubectl run pythontest --image=pythontest:latest --image-pull-policy=Never --port=5000 -n jenkins
                         kubectl expose pod pythontest --port=5000 --type=NodePort --name=pythontest-svc -n jenkins --dry-run=client -o yaml | kubectl apply -f -
                     '''
