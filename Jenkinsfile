@@ -23,8 +23,8 @@ spec:
   - name: kubectl
     image: bitnami/kubectl:latest
     imagePullPolicy: IfNotPresent
-    command: ["/bin/sh", "-c"]
-    args: ["tail -f /dev/null"]
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do sleep 30; done;"]
     tty: true
 '''
         }
