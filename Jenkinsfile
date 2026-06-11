@@ -1,88 +1,39 @@
 pipeline {
-    agent {
-        kubernetes {
-            yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: python
-    image: python:3.9
-    imagePullPolicy: IfNotPresent
-    command: ['/bin/cat']
-    tty: true
-  - name: docker
-    image: docker:24.0.9-dind
-    command: ["dockerd", "-H", "tcp://127.0.0.1:2375", "--tls=false", "--insecure-registry=host.docker.internal:5001"]
-    tty: true
-    securityContext:
-      privileged: true
-    env:
-    - name: DOCKER_HOST
-      value: tcp://localhost:2375
-  - name: kubectl
-    image: bitnami/kubectl:latest
-    imagePullPolicy: IfNotPresent
-    command:
-    - sleep
-    - "999999"
-    tty: true
-    securityContext:
-      runAsUser: 0
-"""
-        }
-    }
+    agent any
+
     triggers {
         pollSCM('* * * * *')
     }
+
     stages {
-        stage('Checkout') {
+        stage('Test python') {
             steps {
-                checkout scm
+                sh "pip install -r requirements.txt"
+                sh "python test.py"
             }
         }
-        stage('Test Python') {
+
+        stage('Build image') {
             steps {
-                container('python') {
-                    sh '''
-                        pip install --upgrade pip
-                        pip install -r requirements.txt
-                        python test.py -v
-                    '''
-                }
+                sh "docker build -t localhost:4000/pythontest:latest ."
+                sh "docker push localhost:4000/pythontest:latest"
             }
         }
-        stage('Build Docker Image') {
+
+        stage('Deploy') {
             steps {
-                container('docker') {
-                    sh '''
-                        echo "Waiting for Docker daemon..."
-                        sleep 10
-                        docker build -t host.docker.internal:5001/pythontest:latest .
-                        docker push host.docker.internal:5001/pythontest:latest
-                    '''
-                }
-            }
-        }
-        stage('Deploy to Kubernetes') {
-            steps {
-                container('kubectl') {
-                    sh '''
-                        kubectl delete deployment pythontest -n jenkins --ignore-not-found=true
-                        kubectl delete pod pythontest -n jenkins --ignore-not-found=true
-                        kubectl run pythontest --image=pythontest:latest --image-pull-policy=Never --port=5000 -n jenkins
-                        kubectl expose pod pythontest --port=5000 --type=NodePort --name=pythontest-svc -n jenkins --dry-run=client -o yaml | kubectl apply -f -
-                    '''
-                }
+                sh "kubectl apply -f ./kubernetes/deployment.yaml"
+                sh "kubectl apply -f ./kubernetes/service.yaml"
             }
         }
     }
+
     post {
         success {
-            echo 'Pipeline réussi !'
+            echo 'Pipeline reussi !'
         }
         failure {
-            echo 'Pipeline échoué !'
+            echo 'Pipeline echoue !'
         }
     }
 }
