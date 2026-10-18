@@ -22,5 +22,9 @@ class TestHello(unittest.TestCase):
         self.assertEqual(rv.status_code, 200)
         self.assertEqual(rv.data, b'Hello Simon!\n')
 
+    def test_new_route(self):
+        rv = self.app.get(f'/feature/{name}')
+        self.assertEqual(rv.status, '200 OK')
+
 if __name__ == '__main__':
     unittest.main()
